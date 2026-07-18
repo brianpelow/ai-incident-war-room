@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Incident War Room</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #050508;
+  --surface: #0a0a10;
+  --surface2: #0f0f18;
+  --border: #1a1a2e;
+  --border2: #252540;
+  --red: #ff2233;
+  --red2: #cc0011;
+  --amber: #ffaa00;
+  --green: #00ff88;
+  --blue: #0088ff;
+  --purple: #8855ff;
+  --text: #e0e0f0;
+  --muted: #556677;
+  --mono: 'Share Tech Mono', monospace;
+  --head: 'Rajdhani', sans-serif;
+  --display: 'Orbitron', monospace;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: var(--bg); color: var(--text); font-family: var(--mono); min-height: 100vh; overflow-x: hidden; }
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255,34,51,0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,34,51,0.02) 1px, transparent 1px);
+  background-size: 32px 32px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* LANDING */
+#landing {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 2rem;
+  position: relative;
+  z-index: 1;
+}
+.war-room-header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+.wh-eyebrow {
+  font-family: var(--display);
+  font-size: 0.55rem;
+  letter-spacing: 0.4em;
+  color: var(--red);
+  text-transform: uppercase;
+  margin-bottom: 1.5rem;
+}
+.wh-title {
+  font-family: var(--display);
+  font-size: clamp(2rem, 5vw, 4rem);
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  color: var(--text);
+  line-height: 1;
+  margin-bottom: 0.5rem;
+}
+.wh-title span { color: var(--red); }
+.wh-sub {
+  font-size: 0.8rem;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+  margin-top: 1rem;
+}
+.scenario-label {
+  font-family: var(--display);
+  font-size: 0.5rem;
+  letter-spacing: 0.3em;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+.scenario-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  max-width: 1000px;
+  width: 100%;
+  margin-bottom: 2rem;
+}
+.scenario-card {
+  background: var(--surface);
+  padding: 2rem 1.5rem;
+  cursor: pointer;
+  transition: background 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+.scenario-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+}
+.scenario-card.sev-critical::before { background: var(--red); }
+.scenario-card.sev-high::before { background: var(--amber); }
+.scenario-card.sev-severe::before { background: var(--purple); }
+.scenario-card:hover { background: var(--surface2); }
+.sc-severity {
+  font-family: var(--display);
+  font-size: 0.5rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.sev-critical .sc-severity { color: var(--red); }
+.sev-high .sc-severity { color: var(--amber); }
+.sev-severe .sc-severity { color: var(--purple); }
+.sev-dot { width: 6px; height: 6px; border-radius: 50%; animation: sevblink 1s infinite; }
+.sev-critical .sev-dot { background: var(--red); }
+.sev-high .sev-dot { background: var(--amber); animation-delay: 0.3s; }
+.sev-severe .sev-dot { background: var(--purple); animation-delay: 0.6s; }
+@keyframes sevblink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+.sc-title {
+  font-family: var(--head);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 0.5rem;
+  letter-spacing: 0.03em;
+}
+.sc-desc { font-size: 0.75rem; color: var(--muted); line-height: 1.6; margin-bottom: 1rem; }
+.sc-meta { font-size: 0.65rem; color: var(--border2); letter-spacing: 0.05em; }
+.sc-trigger-btn {
+  display: block;
+  width: 100%;
+  margin-top: 1.25rem;
+  background: transparent;
+  border: 1px solid currentColor;
+  font-family: var(--display);
+  font-size: 0.55rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  padding: 0.6rem 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.sev-critical .sc-trigger-btn { color: var(--red); }
+.sev-critical .sc-trigger-btn:hover { background: var(--red); color: var(--bg); }
+.sev-high .sc-trigger-btn { color: var(--amber); }
+.sev-high .sc-trigger-btn:hover { background: var(--amber); color: var(--bg); }
+.sev-severe .sc-trigger-btn { color: var(--purple); }
+.sev-severe .sc-trigger-btn:hover { background: var(--purple); color: var(--bg); }
+.landing-agents {
+  font-size: 0.65rem;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+  text-align: center;
+}
+
+/* WAR ROOM */
+#warroom { display: none; position: relative; z-index: 1; min-height: 100vh; padding: 1.5rem; }
+.wr-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  margin-bottom: 1.5rem;
+}
+.wr-incident-id {
+  font-family: var(--display);
+  font-size: 0.6rem;
+  letter-spacing: 0.15em;
+  color: var(--red);
+}
+.wr-scenario-name {
+  font-family: var(--head);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.wr-clock {
+  font-family: var(--display);
+  font-size: 0.65rem;
+  color: var(--amber);
+  letter-spacing: 0.1em;
+}
+.wr-status {
+  font-family: var(--display);
+  font-size: 0.5rem;
+  letter-spacing: 0.2em;
+  color: var(--red);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.wr-status-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--red); animation: sevblink 0.8s infinite; }
+
+.agent-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  margin-bottom: 1.5rem;
+}
+.agent-panel {
+  background: var(--surface);
+  padding: 1.25rem;
+  min-height: 220px;
+  position: relative;
+}
+.agent-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+.agent-name {
+  font-family: var(--display);
+  font-size: 0.6rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+.agent-status {
+  font-family: var(--display);
+  font-size: 0.5rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  padding: 0.2rem 0.5rem;
+  border-radius: 1px;
+}
+.status-standby { color: var(--muted); border: 1px solid var(--border); }
+.status-active { color: var(--amber); border: 1px solid var(--amber); animation: pulse-border 1s infinite; }
+.status-complete { color: var(--green); border: 1px solid var(--green); }
+.status-error { color: var(--red); border: 1px solid var(--red); }
+@keyframes pulse-border { 0%,100%{opacity:1} 50%{opacity:0.5} }
+
+.agent-output {
+  font-size: 0.72rem;
+  line-height: 1.7;
+  color: var(--muted);
+  white-space: pre-wrap;
+}
+.agent-output.active { color: var(--text); }
+.agent-output strong { color: var(--amber); font-weight: normal; }
+.agent-output .finding { color: var(--red); }
+.agent-output .ok { color: var(--green); }
+
+.thinking-line {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.65rem;
+  color: var(--amber);
+  letter-spacing: 0.08em;
+}
+.thinking-dots span {
+  display: inline-block;
+  width: 3px; height: 3px;
+  border-radius: 50%;
+  background: var(--amber);
+  animation: dot 1.2s infinite;
+  margin-left: 2px;
+}
+.thinking-dots span:nth-child(2) { animation-delay: 0.2s; }
+.thinking-dots span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes dot { 0%,80%,100%{opacity:0.2} 40%{opacity:1} }
+
+/* PACKAGE */
+.package-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  display: none;
+}
+.package-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+.package-title {
+  font-family: var(--display);
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  color: var(--green);
+}
+.package-actions { display: flex; gap: 0.75rem; }
+.pkg-btn {
+  font-family: var(--display);
+  font-size: 0.5rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  padding: 0.5rem 1rem;
+  border: 1px solid;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.pkg-btn.copy { color: var(--blue); border-color: var(--blue); }
+.pkg-btn.copy:hover { background: var(--blue); color: var(--bg); }
+.pkg-btn.pdf { color: var(--green); border-color: var(--green); }
+.pkg-btn.pdf:hover { background: var(--green); color: var(--bg); }
+.pkg-btn.restart { color: var(--muted); border-color: var(--border); }
+.pkg-btn.restart:hover { color: var(--text); border-color: var(--text); }
+#package-content {
+  font-size: 0.72rem;
+  line-height: 1.8;
+  color: var(--text);
+  white-space: pre-wrap;
+}
+#package-content h2 { font-family: var(--head); font-size: 1rem; color: var(--red); margin: 1.5rem 0 0.5rem; letter-spacing: 0.05em; }
+#package-content h3 { font-family: var(--head); font-size: 0.85rem; color: var(--amber); margin: 1rem 0 0.4rem; letter-spacing: 0.05em; }
+#package-content strong { color: var(--green); }
+
+.copy-toast {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--green);
+  color: var(--bg);
+  font-family: var(--display);
+  font-size: 0.6rem;
+  letter-spacing: 0.15em;
+  padding: 0.5rem 1.5rem;
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+  z-index: 100;
+}
+.copy-toast.show { opacity: 1; }
+
+@media(max-width:640px) {
+  .agent-grid { grid-template-columns: 1fr; }
+  .scenario-grid { grid-template-columns: 1fr; }
+}
+
+@media print {
+  #landing, #warroom .wr-topbar, .agent-grid, .package-actions { display: none !important; }
+  #warroom { display: block !important; padding: 0; }
+  .package-section { display: block !important; border: none; }
+  #package-content { color: #000; font-size: 10pt; }
+  body { background: white; color: black; }
+}
+</style>
+</head>
+<body>
+
+<div id="landing">
+  <div class="war-room-header">
+    <div class="wh-eyebrow">Brian Pelow · AI Governance</div>
+    <div class="wh-title">AI INCIDENT<br><span>WAR ROOM</span></div>
+    <div class="wh-sub">Select an incident scenario. Five agents coordinate in real time.<br>A complete response package is generated automatically.</div>
+  </div>
+
+  <div class="scenario-label">// Select incident scenario to activate war room</div>
+
+  <div class="scenario-grid">
+    <div class="scenario-card sev-critical" onclick="activateWarRoom('bias')">
+      <div class="sc-severity"><div class="sev-dot"></div>CRITICAL -- P0</div>
+      <div class="sc-title">The Biased Model</div>
+      <div class="sc-desc">A credit decisioning model is producing systematically different outcomes for protected classes. Monitoring alert triggered at 02:47 UTC. Regulatory exposure is immediate.</div>
+      <div class="sc-meta">DETECTION: Automated drift monitor // SYSTEMS: Credit underwriting AI // AFFECTED: Unknown</div>
+      <button class="sc-trigger-btn">Activate War Room</button>
+    </div>
+    <div class="scenario-card sev-high" onclick="activateWarRoom('replay')">
+      <div class="sc-severity"><div class="sev-dot"></div>HIGH -- P1</div>
+      <div class="sc-title">The Replay Failure</div>
+      <div class="sc-desc">An OCC examiner has requested complete decision records for a sample of AI-driven adverse action decisions. The records cannot be reconstructed. Examination begins in 72 hours.</div>
+      <div class="sc-meta">DETECTION: Examiner request // SYSTEMS: Decision record layer // AFFECTED: All AI decisions 2023-present</div>
+      <button class="sc-trigger-btn">Activate War Room</button>
+    </div>
+    <div class="scenario-card sev-severe" onclick="activateWarRoom('rogue')">
+      <div class="sc-severity"><div class="sev-dot"></div>SEVERE -- P0</div>
+      <div class="sc-title">The Rogue Agent</div>
+      <div class="sc-desc">An autonomous deployment agent pushed a model update to production without CAB approval, bypassing the policy engine. The model is live. No change record exists. No rollback path is clear.</div>
+      <div class="sc-meta">DETECTION: Anomaly detection // SYSTEMS: Deployment pipeline, Production AI // AFFECTED: All inference endpoints</div>
+      <button class="sc-trigger-btn">Activate War Room</button>
+    </div>
+  </div>
+
+  <div class="landing-agents">TriageAgent // LegalRiskAgent // RegulatoryExposureAgent // EngineeringRemediationAgent // BoardCommunicationAgent</div>
+</div>
+
+<div id="warroom">
+  <div class="wr-topbar">
+    <div>
+      <div class="wr-incident-id" id="incident-id">INC-2026-000</div>
+      <div class="wr-scenario-name" id="scenario-name">--</div>
+    </div>
+    <div class="wr-status"><div class="wr-status-dot"></div><span id="wr-status-text">INITIALIZING</span></div>
+    <div class="wr-clock" id="wr-clock">00:00</div>
+  </div>
+
+  <div class="agent-grid">
+    <div class="agent-panel" id="panel-triage">
+      <div class="agent-header">
+        <div class="agent-name" style="color:var(--red)">TriageAgent</div>
+        <div class="agent-status status-standby" id="status-triage">STANDBY</div>
+      </div>
+      <div class="agent-output" id="output-triage">Awaiting incident activation...</div>
+    </div>
+    <div class="agent-panel" id="panel-legal">
+      <div class="agent-header">
+        <div class="agent-name" style="color:var(--amber)">LegalRiskAgent</div>
+        <div class="agent-status status-standby" id="status-legal">STANDBY</div>
+      </div>
+      <div class="agent-output" id="output-legal">Awaiting triage completion...</div>
+    </div>
+    <div class="agent-panel" id="panel-regulatory">
+      <div class="agent-header">
+        <div class="agent-name" style="color:var(--blue)">RegulatoryExposureAgent</div>
+        <div class="agent-status status-standby" id="status-regulatory">STANDBY</div>
+      </div>
+      <div class="agent-output" id="output-regulatory">Awaiting triage completion...</div>
+    </div>
+    <div class="agent-panel" id="panel-engineering">
+      <div class="agent-header">
+        <div class="agent-name" style="color:var(--purple)">EngineeringRemediationAgent</div>
+        <div class="agent-status status-standby" id="status-engineering">STANDBY</div>
+      </div>
+      <div class="agent-output" id="output-engineering">Awaiting triage completion...</div>
+    </div>
+    <div class="agent-panel" id="panel-board">
+      <div class="agent-header">
+        <div class="agent-name" style="color:var(--green)">BoardCommunicationAgent</div>
+        <div class="agent-status status-standby" id="status-board">STANDBY</div>
+      </div>
+      <div class="agent-output" id="output-board">Awaiting all agents...</div>
+    </div>
+  </div>
+
+  <div class="package-section" id="package-section">
+    <div class="package-header">
+      <div class="package-title">// INCIDENT RESPONSE PACKAGE -- COMPLETE</div>
+      <div class="package-actions">
+        <button class="pkg-btn copy" onclick="copyPackage()">Copy Markdown</button>
+        <button class="pkg-btn pdf" onclick="downloadPDF()">Download PDF</button>
+        <button class="pkg-btn restart" onclick="restart()">New Incident</button>
+      </div>
+    </div>
+    <div id="package-content"></div>
+  </div>
+</div>
+
+<div class="copy-toast" id="copy-toast">COPIED TO CLIPBOARD</div>
+
+<script>
+const PROXY = 'https://portfolio-proxy.bstzzz550.workers.dev';
+
+const SCENARIOS = {
+  bias: {
+    id: 'INC-2026-' + Math.floor(Math.random() * 9000 + 1000),
+    name: 'The Biased Model -- Credit Decisioning AI',
+    severity: 'CRITICAL / P0',
+    description: 'A credit decisioning AI model is producing systematically different approval rates for protected classes. A drift monitoring alert fired at 02:47 UTC. The model has been in production for 4 months and has processed approximately 340,000 decisions. The disparity was detected in post-hoc analysis comparing approval rates across demographic groups. The model was not human-reviewed before deployment and no adverse action notice process was validated for AI-generated decisions.',
+    context: 'Regulated financial institution. Subject to ECOA, Fair Housing Act, CFPB oversight, and OCC model risk management expectations (SR 11-7). The institution has not previously disclosed AI use in credit decisioning to regulators.'
+  },
+  replay: {
+    id: 'INC-2026-' + Math.floor(Math.random() * 9000 + 1000),
+    name: 'The Replay Failure -- OCC Examination',
+    severity: 'HIGH / P1',
+    description: 'An OCC examiner has formally requested complete decision records for a random sample of 50 AI-driven adverse action decisions made between January 2023 and December 2025. The request includes: the exact model version that made each decision, the complete input state at inference time, all inference parameters, and the raw model output before downstream processing. Initial assessment indicates that decision records were not systematically captured. Model versioning was informal. The examination begins in 72 hours.',
+    context: 'National bank subject to OCC supervision. Model risk management framework exists on paper but was not implemented for AI systems. The institution has deployed 7 AI systems making consequential decisions. None have complete decision record architecture.'
+  },
+  rogue: {
+    id: 'INC-2026-' + Math.floor(Math.random() * 9000 + 1000),
+    name: 'The Rogue Agent -- Unauthorized Model Deployment',
+    severity: 'SEVERE / P0',
+    description: 'At 14:23 UTC an autonomous deployment agent pushed a model update to the production fraud detection system without Change Advisory Board approval. The deployment bypassed the policy engine gate. The updated model is now live and processing all fraud detection decisions. No change record was created. The previous model version was overwritten. No rollback artifact exists. The agent that performed the deployment has no named human owner in the attribution registry.',
+    context: 'Financial institution with active OCC and Fed supervision. SOX ITGC controls require documented change approval for production systems. The institution is in the middle of a model risk management examination. The deployment agent was part of an experimental autonomous SDLC initiative that was not formally registered or governed.'
+  }
+};
+
+const AGENT_PROMPTS = {
+  triage: (scenario) => `You are the TriageAgent in an AI incident war room for a regulated financial institution.
+
+INCIDENT: ${scenario.name}
+SEVERITY: ${scenario.severity}
+DESCRIPTION: ${scenario.description}
+CONTEXT: ${scenario.context}
+
+Produce a structured triage report. Use this exact format with these exact headers:
+
+SEVERITY ASSESSMENT
+[Rate P0/P1/P2 and explain why in 1-2 sentences]
+
+BLAST RADIUS
+[What systems, data, and populations are affected. Be specific about numbers where estimable.]
+
+IMMEDIATE CONTAINMENT ACTIONS (Next 2 Hours)
+[3-5 specific, numbered actions. Not generic. Specific to this incident.]
+
+ESCALATION REQUIRED
+[Who must be notified immediately: legal, compliance, regulators, board. Yes/No for each with reason.]
+
+INCIDENT COMMANDER
+[Who owns this incident and why]
+
+Be direct and specific. No hedging. This is a live incident.`,
+
+  legal: (scenario, triageOutput) => `You are the LegalRiskAgent in an AI incident war room for a regulated financial institution.
+
+INCIDENT: ${scenario.name}
+DESCRIPTION: ${scenario.description}
+CONTEXT: ${scenario.context}
+
+TRIAGE FINDINGS: ${triageOutput}
+
+Produce a structured legal risk assessment. Use this exact format:
+
+LITIGATION EXPOSURE
+[Specific litigation risks. Class action potential. Estimated exposure range if quantifiable.]
+
+SPOLIATION RISK
+[Is there a risk that evidence has been destroyed or cannot be preserved? What specifically?]
+
+ADVERSE ACTION NOTICE OBLIGATIONS
+[Are there immediate notice obligations to affected consumers? Cite specific regulations.]
+
+IMMEDIATE LEGAL ACTIONS (Next 24 Hours)
+[3-4 specific legal actions required immediately. Numbered.]
+
+PRIVILEGE CONSIDERATIONS
+[What communications should be routed through counsel immediately?]
+
+REGULATORY NOTIFICATION REQUIREMENTS
+[Must regulators be notified? Which ones? What timeline? Cite authority.]
+
+Be specific. Cite regulations by name (ECOA, CFPB, SR 11-7, etc.). This is a live incident.`,
+
+  regulatory: (scenario, triageOutput) => `You are the RegulatoryExposureAgent in an AI incident war room for a regulated financial institution.
+
+INCIDENT: ${scenario.name}
+DESCRIPTION: ${scenario.description}
+CONTEXT: ${scenario.context}
+
+TRIAGE FINDINGS: ${triageOutput}
+
+Produce a structured regulatory exposure assessment. Use this exact format:
+
+REGULATORY FRAMEWORKS TRIGGERED
+[List each applicable regulation/guidance with a one-line explanation of why it applies. SR 11-7, ECOA, CFPB, OCC, FFIEC, EU AI Act as applicable.]
+
+EXAMINATION RISK
+[Rate Low/Medium/High/Critical. Explain the specific examination risk this incident creates.]
+
+SUPERVISORY FINDINGS AT RISK
+[What specific supervisory findings could result from this incident?]
+
+SELF-DISCLOSURE ANALYSIS
+[Should the institution self-disclose to regulators before they discover this? Arguments for and against.]
+
+REGULATORY TIMELINE
+[Key regulatory deadlines created by this incident. Notification windows. Examination preparation timeline.]
+
+COMPARATIVE ENFORCEMENT
+[Have regulators taken action against other institutions for similar failures? What were the outcomes?]
+
+Be specific. Cite specific regulatory actions and enforcement precedents where relevant.`,
+
+  engineering: (scenario, triageOutput) => `You are the EngineeringRemediationAgent in an AI incident war room for a regulated financial institution.
+
+INCIDENT: ${scenario.name}
+DESCRIPTION: ${scenario.description}
+CONTEXT: ${scenario.context}
+
+TRIAGE FINDINGS: ${triageOutput}
+
+Produce a structured engineering remediation plan. Use this exact format:
+
+ROOT CAUSE (TECHNICAL)
+[The specific technical failure or gap that caused or enabled this incident.]
+
+24-HOUR ACTIONS
+[3-5 specific engineering actions in the next 24 hours. Numbered. Include specific tools, systems, and owners.]
+
+72-HOUR ACTIONS
+[3-4 engineering actions in the next 72 hours to stabilize and contain.]
+
+30-DAY REMEDIATION ROADMAP
+[The structural engineering work required to prevent recurrence. Reference specific architectural patterns: model registry, decision record layer, policy-as-code, attribution registry, CAB automation, replay verification.]
+
+WHAT SHOULD HAVE BEEN IN PLACE
+[The specific governance infrastructure that would have prevented this incident. Be specific about each missing component.]
+
+ESTIMATED ENGINEERING EFFORT
+[Rough effort estimates for the 30-day roadmap. Teams and weeks.]
+
+Be specific. Reference real architectural patterns and tools. This is an engineering response, not a policy document.`,
+
+  board: (scenario, allOutputs) => `You are the BoardCommunicationAgent in an AI incident war room for a regulated financial institution.
+
+INCIDENT: ${scenario.name}
+SEVERITY: ${scenario.severity}
+
+FULL INCIDENT CONTEXT:
+${allOutputs}
+
+Draft a board communication memo. Use this exact format:
+
+TO: Board of Directors, Audit Committee
+FROM: Chief Technology Officer
+DATE: ${new Date().toLocaleDateString('en-US', {month: 'long', day: 'numeric', year: 'numeric'})}
+RE: ${scenario.name} -- Incident Notification
+
+EXECUTIVE SUMMARY
+[2-3 sentences. What happened, what the exposure is, what we are doing. Written for a non-technical board member.]
+
+WHAT HAPPENED
+[Plain language description of the incident. No jargon. What the board needs to understand.]
+
+REGULATORY AND LEGAL EXPOSURE
+[What regulators may ask about. What litigation risk exists. Written plainly.]
+
+IMMEDIATE ACTIONS TAKEN
+[What engineering and legal have already done or are doing in the next 24 hours.]
+
+WHAT WE ARE BUILDING TO PREVENT RECURRENCE
+[The governance infrastructure being put in place. Written as a forward-looking commitment, not a confession.]
+
+BOARD ACTION REQUIRED
+[Specific asks of the board. Notification approvals. Resource authorizations. Timeline for next update.]
+
+Write in the voice of a CTO who is being transparent, taking accountability, and demonstrating that the situation is under control. Not defensive. Not evasive. Direct.`
+};
+
+let state = {
+  scenario: null,
+  outputs: {},
+  clockInterval: null,
+  startTime: null,
+  running: false
+};
+
+async function activateWarRoom(scenarioKey) {
+  state.scenario = SCENARIOS[scenarioKey];
+  state.outputs = {};
+  state.running = true;
+
+  document.getElementById('landing').style.display = 'none';
+  document.getElementById('warroom').style.display = 'block';
+  document.getElementById('package-section').style.display = 'none';
+  document.getElementById('incident-id').textContent = state.scenario.id;
+  document.getElementById('scenario-name').textContent = state.scenario.name;
+  document.getElementById('wr-status-text').textContent = 'ACTIVE';
+
+  resetPanels();
+  startClock();
+
+  // Run agents sequentially
+  await runAgent('triage', AGENT_PROMPTS.triage(state.scenario), 0);
+  await runAgent('legal', AGENT_PROMPTS.legal(state.scenario, state.outputs.triage), 500);
+  await runAgent('regulatory', AGENT_PROMPTS.regulatory(state.scenario, state.outputs.triage), 500);
+  await runAgent('engineering', AGENT_PROMPTS.engineering(state.scenario, state.outputs.triage), 500);
+
+  const allOutputs = Object.entries(state.outputs)
+    .map(([k, v]) => `=== ${k.toUpperCase()} AGENT ===\n${v}`)
+    .join('\n\n');
+  await runAgent('board', AGENT_PROMPTS.board(state.scenario, allOutputs), 800);
+
+  document.getElementById('wr-status-text').textContent = 'PACKAGE READY';
+  stopClock();
+  assemblePackage();
+}
+
+async function runAgent(agentKey, prompt, delay) {
+  await sleep(delay);
+  setAgentStatus(agentKey, 'active');
+  setAgentOutput(agentKey, '');
+  showThinkingInPanel(agentKey, true);
+
+  try {
+    const resp = await fetch(PROXY, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'qwen/qwen3-8b:free',
+        max_tokens: 600,
+        transforms: ['middle-out'],
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const data = await resp.json();
+    let text = data.choices?.[0]?.message?.content || '';
+    text = text.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+    if (!text) text = getFallback(agentKey);
+    showThinkingInPanel(agentKey, false);
+    state.outputs[agentKey] = text;
+    setAgentOutput(agentKey, text);
+    setAgentStatus(agentKey, 'complete');
+  } catch(e) {
+    showThinkingInPanel(agentKey, false);
+    const fallback = getFallback(agentKey);
+    state.outputs[agentKey] = fallback;
+    setAgentOutput(agentKey, fallback);
+    setAgentStatus(agentKey, 'complete');
+  }
+}
+
+function getFallback(agentKey) {
+  const scenario = state.scenario;
+  const fallbacks = {
+    triage: `SEVERITY ASSESSMENT\n${scenario.severity} -- This incident presents immediate regulatory and reputational risk requiring executive escalation.\n\nBLAST RADIUS\nAll AI-driven decisions in affected systems. Estimated affected population requires immediate audit.\n\nIMMEDIATE CONTAINMENT ACTIONS (Next 2 Hours)\n1. Halt all production inference on affected model immediately\n2. Preserve all available logs and artifacts under legal hold\n3. Notify General Counsel and Chief Compliance Officer\n4. Convene incident command team within 60 minutes\n5. Begin reconstruction of available decision records\n\nESCALATION REQUIRED\nLegal: YES -- immediate\nCompliance: YES -- immediate\nRegulators: TBD pending legal counsel\nBoard: YES -- within 24 hours\n\nINCIDENT COMMANDER\nChief Technology Officer owns this incident.`,
+    legal: `LITIGATION EXPOSURE\nMaterial class action risk depending on affected population size and decision disparity magnitude. Immediate legal hold required on all related artifacts.\n\nSPOLIATION RISK\nHigh. Without complete decision records, inability to produce evidence in discovery creates spoliation inference risk.\n\nADVERSE ACTION NOTICE OBLIGATIONS\nCFPB Regulation B requires specific reasons for adverse actions. AI-generated decisions without explainable factors may not satisfy this requirement.\n\nIMMEDIATE LEGAL ACTIONS (Next 24 Hours)\n1. Issue litigation hold to all relevant teams\n2. Route all communications through counsel\n3. Engage outside counsel with AI regulatory experience\n4. Assess self-disclosure obligations\n\nPRIVILEGE CONSIDERATIONS\nAll incident communications should be routed through General Counsel immediately.\n\nREGULATORY NOTIFICATION REQUIREMENTS\nOCC and CFPB notification may be required within 36-72 hours depending on scope.`,
+    regulatory: `REGULATORY FRAMEWORKS TRIGGERED\nSR 11-7: Model Risk Management -- AI systems making consequential decisions require complete documentation and validation\nECOA/Regulation B: Fair lending requirements apply to automated decisioning\nOCC Model Risk Guidance: Requires model inventory, validation, and governance\nFFIEC: Technology risk management expectations apply\n\nEXAMINATION RISK\nCRITICAL -- This incident, if discovered during examination, would constitute a significant model risk management finding.\n\nSUPERVISORY FINDINGS AT RISK\nMRA (Matters Requiring Attention) for model risk management\nPotential MRA for fair lending if disparate impact confirmed\nPossible enforcement action if notification obligations missed\n\nSELF-DISCLOSURE ANALYSIS\nSelf-disclosure is generally viewed favorably by OCC and Federal Reserve examiners and typically results in less severe supervisory response.\n\nREGULATORY TIMELINE\n24 hours: Determine notification obligations with counsel\n72 hours: Prepare examination response package\n30 days: Remediation plan due to regulators\n\nCOMPARATIVE ENFORCEMENT\nOCC has issued consent orders to multiple institutions for model risk management failures. Civil money penalties have ranged from $5M to $250M.`,
+    engineering: `ROOT CAUSE (TECHNICAL)\nAbsence of governance infrastructure: no decision record layer, no model registry, no policy-enforcement gate, no attribution registry.\n\n24-HOUR ACTIONS\n1. Halt production inference and preserve all available artifacts\n2. Reconstruct best-available decision records from application logs\n3. Document exact model version deployed using available git history\n4. Identify all AI systems in production lacking decision records\n5. Stand up emergency logging for any systems that must remain live\n\n72-HOUR ACTIONS\n1. Implement emergency decision record capture for all production AI\n2. Register all deployed models in a model registry with best-available provenance\n3. Document inference parameters for all production systems\n4. Establish manual CAB approval gate for any model changes\n\n30-DAY REMEDIATION ROADMAP\n1. Decision record layer with hash integrity (Weeks 1-2)\n2. Model registry with deployment authorization workflow (Week 2)\n3. Context capture at retrieval layer for RAG systems (Week 3)\n4. Policy-as-code deployment gate via OPA (Week 3-4)\n5. Attribution registry for all automated actions (Week 4)\n6. Replay verification drill (Week 4)\n\nWHAT SHOULD HAVE BEEN IN PLACE\nDecision record layer, model registry, CAB automation with risk scoring, OPA policy engine blocking non-compliant deployments, attribution registry.\n\nESTIMATED ENGINEERING EFFORT\n6-8 engineers, 4 weeks for full remediation.`,
+    board: `TO: Board of Directors, Audit Committee\nFROM: Chief Technology Officer\nDATE: ${new Date().toLocaleDateString('en-US', {month: 'long', day: 'numeric', year: 'numeric'})}\nRE: ${scenario.name} -- Incident Notification\n\nEXECUTIVE SUMMARY\nWe have identified a significant incident involving our AI systems that requires immediate board awareness. We are taking decisive action and are engaged with legal counsel. This memo provides a complete and transparent account.\n\nWHAT HAPPENED\n${scenario.description}\n\nREGULATORY AND LEGAL EXPOSURE\nThis incident creates potential regulatory examination findings and litigation exposure. Legal counsel has been engaged and is assessing notification obligations. We are treating this with the highest urgency.\n\nIMMEDIATE ACTIONS TAKEN\n1. Incident command team activated\n2. General Counsel and Chief Compliance Officer engaged\n3. Legal hold issued on all relevant artifacts\n4. Engineering remediation underway\n\nWHAT WE ARE BUILDING TO PREVENT RECURRENCE\nWe are implementing complete AI governance infrastructure: decision record layer, model registry, policy enforcement gates, and attribution requirements for all automated systems.\n\nBOARD ACTION REQUIRED\n1. Authorize emergency engineering resources for remediation\n2. Approve engagement of outside AI regulatory counsel\n3. Receive next update within 24 hours`
+  };
+  return fallbacks[agentKey] || 'Agent output unavailable. See archive for fallback.';
+}
+
+function assemblePackage() {
+  const s = state.scenario;
+  const pkg = `# INCIDENT RESPONSE PACKAGE
+## ${s.name}
+**Incident ID:** ${s.id}
+**Severity:** ${s.severity}
+**Generated:** ${new Date().toISOString()}
+**Generated by:** AI Incident War Room -- brianpelow.github.io/ai-incident-war-room
+
+---
+
+## INCIDENT DESCRIPTION
+${s.description}
+
+**Context:** ${s.context}
+
+---
+
+## TRIAGE ASSESSMENT
+
+${state.outputs.triage || ''}
+
+---
+
+## LEGAL RISK ASSESSMENT
+
+${state.outputs.legal || ''}
+
+---
+
+## REGULATORY EXPOSURE ASSESSMENT
+
+${state.outputs.regulatory || ''}
+
+---
+
+## ENGINEERING REMEDIATION PLAN
+
+${state.outputs.engineering || ''}
+
+---
+
+## BOARD COMMUNICATION
+
+${state.outputs.board || ''}
+
+---
+
+*This incident response package was generated by the AI Incident War Room.*
+*For the governance framework that prevents these incidents: github.com/brianpelow/ai-governance-framework*
+*For the platform engineering infrastructure that enforces it: github.com/brianpelow/orbit-platform*`;
+
+  document.getElementById('package-content').innerHTML = formatPackage(pkg);
+  document.getElementById('package-section').style.display = 'block';
+  document.getElementById('package-section').scrollIntoView({ behavior: 'smooth' });
+  window._packageMarkdown = pkg;
+}
+
+function formatPackage(text) {
+  return text
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/^---$/gm, '<hr style="border-color:var(--border);margin:1rem 0">')
+    .split('\n').map(l => l.startsWith('<') ? l : `<span>${l}</span>`).join('\n');
+}
+
+function copyPackage() {
+  navigator.clipboard.writeText(window._packageMarkdown || '').then(() => {
+    const toast = document.getElementById('copy-toast');
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2000);
+  });
+}
+
+function downloadPDF() {
+  window.print();
+}
+
+function setAgentStatus(agentKey, status) {
+  const el = document.getElementById(`status-${agentKey}`);
+  el.className = `agent-status status-${status}`;
+  el.textContent = status.toUpperCase();
+}
+
+function setAgentOutput(agentKey, text) {
+  const el = document.getElementById(`output-${agentKey}`);
+  el.textContent = text;
+  el.className = `agent-output ${text ? 'active' : ''}`;
+}
+
+function showThinkingInPanel(agentKey, show) {
+  const el = document.getElementById(`output-${agentKey}`);
+  if (show) {
+    el.innerHTML = `<div class="thinking-line">PROCESSING<div class="thinking-dots"><span></span><span></span><span></span></div></div>`;
+  }
+}
+
+function resetPanels() {
+  ['triage','legal','regulatory','engineering','board'].forEach(k => {
+    setAgentStatus(k, 'standby');
+    setAgentOutput(k, k === 'board' ? 'Awaiting all agents...' : 'Awaiting triage completion...');
+    if (k === 'triage') setAgentOutput(k, 'Incident received. Initiating triage...');
+  });
+}
+
+function startClock() {
+  state.startTime = Date.now();
+  state.clockInterval = setInterval(() => {
+    const elapsed = Math.floor((Date.now() - state.startTime) / 1000);
+    const m = Math.floor(elapsed / 60).toString().padStart(2, '0');
+    const s = (elapsed % 60).toString().padStart(2, '0');
+    document.getElementById('wr-clock').textContent = `${m}:${s}`;
+  }, 1000);
+}
+
+function stopClock() {
+  if (state.clockInterval) clearInterval(state.clockInterval);
+}
+
+function restart() {
+  stopClock();
+  state = { scenario: null, outputs: {}, clockInterval: null, startTime: null, running: false };
+  document.getElementById('warroom').style.display = 'none';
+  document.getElementById('landing').style.display = 'flex';
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+</script>
+</body>
+</html>
