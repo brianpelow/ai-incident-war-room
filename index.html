@@ -213,7 +213,7 @@ body::before {
 
 .agent-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  grid-template-columns: repeat(2, 1fr);
   gap: 1px;
   background: var(--border);
   border: 1px solid var(--border);
@@ -364,6 +364,13 @@ body::before {
   #package-content { color: #000; font-size: 10pt; }
   body { background: white; color: black; }
 }
+
+.agent-grid { align-items: stretch; }
+#panel-board { grid-column: 1 / -1; }
+.agent-panel { max-height: 460px; overflow-y: auto; }
+.agent-panel::-webkit-scrollbar { width: 4px; }
+.agent-panel::-webkit-scrollbar-thumb { background: var(--border2); }
+@media(max-width:640px) { #panel-board { grid-column: auto; } }
 </style>
 </head>
 <body>
