@@ -1,13 +1,61 @@
 name: CI
+
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
+
 jobs:
-  check:
+  verify:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Verify files
-        run: test -f index.html && test -f README.md && echo 'OK'
+
+      - name: Verify required files
+        run: |
+          test -f index.html || { echo "::error::index.html missing"; exit 1; }
+          test -f README.md  || { echo "::error::README.md missing"; exit 1; }
+          echo "Required files present"
+
+      - name: Guard against encoding corruption
+        run: |
+          python3 - <<'PY'
+          import sys
+          from pathlib import Path
+
+          # Regression test. Non-ASCII literals here have corrupted twice:
+          # PowerShell Get-Content -Raw reads UTF-8 as Windows-1252, a middot
+          # becomes two chars, WriteAllText re-encodes them as four bytes, and
+          # every edit cycle doubles it. HTML entities are ASCII and cannot
+          # degrade. This gate keeps the file that way.
+          text = Path("index.html").read_text(encoding="utf-8")
+          bad = sorted({c for c in text if ord(c) > 127})
+
+          if bad:
+              print("::error::Non-ASCII characters found in index.html")
+              for c in bad[:20]:
+                  print(f"  U+{ord(c):04X} {c!r} x{text.count(c)}")
+              print("Use HTML entities (&middot; &mdash;) instead of literals.")
+              sys.exit(1)
+
+          print(f"index.html is pure ASCII ({len(text)} chars)")
+          PY
+
+      - name: Verify HTML structure
+        run: |
+          python3 - <<'PY'
+          import sys
+          from pathlib import Path
+
+          text = Path("index.html").read_text(encoding="utf-8")
+          missing = [t for t in ("<!DOCTYPE html>", "<html", "</html>", "<script", "</script>") if t not in text]
+          if missing:
+              print(f"::error::Missing structural elements: {missing}")
+              sys.exit(1)
+          if text.count("<script") != text.count("</script>"):
+              print("::error::Unbalanced script tags")
+              sys.exit(1)
+          print("HTML structure valid")
+          PY
